@@ -1,0 +1,61 @@
+
+name: Build Simcraft Studio DMG
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-dmg:
+    name: Build macOS DMG Installer
+    runs-on: macos-15
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Mac application
+        shell: bash
+        run: |
+          chmod +x Build_on_Mac.command
+          ./Build_on_Mac.command
+
+      - name: Verify application
+        shell: bash
+        run: |
+          test -x 'Simscraft Studio.app/Contents/MacOS/SimscraftStudio'
+          test -f 'Simscraft Studio.app/Contents/Resources/SmartMorph.html'
+          test -f 'Simscraft Studio.app/Contents/Resources/Templates/Female/F19.png'
+          test -f 'Simscraft Studio.app/Contents/Resources/Templates/Male/M19.png'
+          echo "Mac application verified."
+
+      - name: Package DMG
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mkdir -p dmg-staging
+
+          ditto 'Simscraft Studio.app' \
+            'dmg-staging/Simscraft Studio.app'
+
+          ln -s /Applications dmg-staging/Applications
+
+          hdiutil create \
+            -volname 'Simcraft Studio' \
+            -srcfolder dmg-staging \
+            -format UDZO \
+            -ov \
+            'Simcraft-Studio.dmg'
+
+          test -s 'Simcraft-Studio.dmg'
+          hdiutil verify 'Simcraft-Studio.dmg'
+
+      - name: Upload DMG
+        uses: actions/upload-artifact@v4
+        with:
+          name: Simcraft-Studio-DMG
+          path: Simcraft-Studio.dmg
+          if-no-files-found: error
+          retention-days: 30
