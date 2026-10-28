@@ -11,7 +11,13 @@ on:
       - 'Resources/**'
       - 'AppIcon.iconset/**'
       - '.github/workflows/build-mac.yml'
+name: Build Simcraft Mac DMG
 
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
 jobs:
   build-macos:
     name: Compile macOS application
