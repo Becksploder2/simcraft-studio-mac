@@ -1,0 +1,18 @@
+SimMorph Studio v3.6 - MediaPipe engine status
+
+This distribution does NOT include the trained model or MediaPipe runtime.
+The UI checks the model and gives more specific errors. It does not yet
+perform standalone facial analysis without a compatible Python environment.
+
+To enable analysis on a Windows PC (requires internet once):
+1. Install Python 3.11 (64-bit).
+2. Run: py -3.11 -m pip install mediapipe
+3. Download the genuine model from:
+   https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task
+4. Save it in the Models folder beside SimMorphStudio.exe.
+5. Make sure pythonw.exe is on PATH (or place a complete Python runtime in FaceEngine/runtime).
+6. Import a reference photo, capture the Sim, click Analyze Faces.
+
+The resulting landmarks are saved in FaceAnalysis/latest.json.
+If analysis fails, inspect FaceEngine/analysis_error.log.
+This does not automatically morph CAS faces.

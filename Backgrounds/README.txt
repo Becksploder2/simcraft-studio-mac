@@ -1,0 +1,1 @@
+Drop .png, .jpg, .jpeg, or .bmp files in this folder. In SimMorph Studio use Change Background > Refresh Background List, then choose a theme. Or use Change Background > Import Background. The selected theme is saved in Config/selected_background.txt. Original room artwork remains the default.

@@ -1,0 +1,1 @@
+The Analyze Faces button invokes pythonw + mediapipe in the background. This release is NOT a standalone inference runtime. Install Python with pythonw and pip install -r FaceEngine/requirements.txt, and download Models/face_landmarker.task. Analysis outputs FaceAnalysis/latest.json. The original Browse for Photo handler is unchanged. CAS automation remains experimental.
