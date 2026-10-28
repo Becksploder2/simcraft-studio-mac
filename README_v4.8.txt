@@ -1,0 +1,1 @@
+v4.8: Matching Face Texture Lab. Mac source build kit, NOT a precompiled macOS app. On macOS run Build_on_Mac.command with Xcode Command Line Tools. No real Sims 4 package generation or OpenAI integration.

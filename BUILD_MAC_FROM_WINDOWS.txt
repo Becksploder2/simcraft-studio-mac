@@ -1,0 +1,24 @@
+SIMSCRAFT STUDIO — BUILD MAC APP FROM WINDOWS
+
+This package contains the macOS source, assets, and a GitHub Actions workflow.
+You do not need a Mac to start the build. GitHub compiles the app on a macOS runner.
+
+1. On github.com, create a NEW PRIVATE repository (do not add a README).
+2. Extract this ZIP on Windows.
+3. Upload ALL extracted files and folders to the repository root, including the hidden .github folder.
+   Important: Windows Explorer may hide dot-prefixed folders; check that .github/workflows/build-mac.yml appears on GitHub.
+   For large numbers of files, GitHub Desktop or Git is easier than the web uploader.
+4. Commit the files to the MAIN branch.
+5. Open your repository's Actions tab.
+6. Select 'Build Simscraft Studio for macOS' and click 'Run workflow'.
+7. Wait for the job to complete successfully.
+8. Open the completed run, download the 'Simscraft-Studio-macOS' artifact.
+9. Unzip the downloaded artifact, which contains Simscraft-Studio-macOS.zip.
+10. Send the inner ZIP to your friend. They can extract it and open Simscraft Studio.app.
+
+NOTES:
+- GitHub Actions availability, billing and macOS runner quotas depend on your GitHub account.
+- The resulting app is NOT Apple-signed or notarized; macOS Gatekeeper may block it until your friend explicitly approves it in System Settings > Privacy & Security.
+- The app has NOT been compiled or tested in this environment. If the workflow fails, open the failed step's log and share it for debugging.
+- This build script copies Resources/Templates into the app bundle. It includes 19 male and 19 female templates.
+- Keep your repository PRIVATE if you don't want the source or images publicly accessible.

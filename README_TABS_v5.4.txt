@@ -1,0 +1,1 @@
+Simcraft v5.4 Mac build kit: Resources/Studio.html includes tabbed workspace with UV Face Alignment. Native Swift application source remains from v5.3 and must be built on a Mac; native menu conversion is NOT implemented on Mac. Open Resources/Studio.html in a browser for tabs.

@@ -1,0 +1,1 @@
+CASCraft v4.6 Mac source/build kit. Run Build_on_Mac.command on macOS with Xcode Command Line Tools to create a native .app. New SmartAssist and read-only CAS package header inspector included. Mac build/runtime not verified in Linux environment.

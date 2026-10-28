@@ -1,0 +1,1 @@
+Blue/Vegas gold icon integrated into macOS app build via iconutil. Build requires macOS and Xcode Command Line Tools. Windows icon is included separately; EXE Explorer resource is not embedded.

@@ -1,0 +1,4 @@
+SIMSCRAFT EMBEDDED DESKTOP WORKSPACE — TEST BUILD
+WINDOWS: Run Install-Embedded-Workspace-Windows.bat once, then Start-Embedded-Simscraft-Windows.bat. Requires Python 3, pywebview and Microsoft Edge WebView2 Runtime. The existing SimcraftStudio.exe is UNCHANGED and still opens the external browser; use the new launcher for embedded tabs. This is a source/launcher-based test, not a rebuilt executable. Internet browser window is not used for the new launcher.
+MAC: Run Build_on_Mac.command on a Mac. The compiled native application now hosts Studio.html in its main window via WKWebView, replacing the native preview area on launch. The original menu commands remain. This is an untested Mac build kit, not a precompiled app.
+Both: BuildCraft stays Coming Soon. Existing Studio.html and tools are preserved. Local file access in embedded web views may differ from Chrome/Safari, and nested tool iframes or imports require testing.

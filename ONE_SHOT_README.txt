@@ -1,0 +1,1 @@
+One-Shot restored: Character Studio > SmartMorph workspace > Import reference photo > ONE-SHOT — Prepare Full Face Plan. The button triggers the existing one-shot planning mode and does not claim automatic photo-derived slider analysis or Sims 4 changes. Windows and macOS packages updated.

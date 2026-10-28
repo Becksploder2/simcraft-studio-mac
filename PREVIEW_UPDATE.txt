@@ -1,0 +1,1 @@
+SmartMorph now includes a side-by-side CAS screenshot preview. Import your own in-game screenshot. Existing features retained. No automatic 3D preview or live game integration.

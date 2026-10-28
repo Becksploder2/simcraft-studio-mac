@@ -1,0 +1,1 @@
+Original 38 templates recovered from uploaded SimMorphStudio.rar. SmartMorph gallery added. Both Assets/FaceTemplates and Resources/Templates included for compatibility. Windows and Mac UI not runtime-tested.

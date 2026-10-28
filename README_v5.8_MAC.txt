@@ -1,0 +1,1 @@
+Simcraft v5.8 macOS build kit: includes the v5.5 native Swift project and icon resources. The v5.8 Windows updater and diagnostics are NOT implemented for macOS yet. Requires a Mac to compile and test. Do not describe this as a ready-to-run macOS .app or a parity release. GitHub repository: https://github.com/Becksploder2/Simcraft
