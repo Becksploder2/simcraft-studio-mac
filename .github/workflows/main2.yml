@@ -11,6 +11,8 @@ on:
       - 'Resources/SmartMorph.html'
       - 'CASCraftMac.swift'
       - 'Info.plist'
+      - 'Resources/**'
+      - '.github/workflows/main2.yml'
       - 'Build_on_Mac.command'
       - '.github/workflows/main2.yml'
 
