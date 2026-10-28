@@ -1,0 +1,47 @@
+name: Build Simscraft Studio for macOS
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'CASCraftMac.swift'
+      - 'Build_on_Mac.command'
+      - 'Info.plist'
+      - 'Resources/**'
+      - 'AppIcon.iconset/**'
+      - '.github/workflows/build-mac.yml'
+
+jobs:
+  build-macos:
+    name: Compile macOS application
+    runs-on: macos-15
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout project
+        uses: actions/checkout@v4
+      - name: Build native macOS app
+        shell: bash
+        run: |
+          chmod +x Build_on_Mac.command
+          ./Build_on_Mac.command
+      - name: Check app bundle and templates
+        shell: bash
+        run: |
+          test -x 'Simscraft Studio.app/Contents/MacOS/SimscraftStudio'
+          test -f 'Simscraft Studio.app/Contents/Resources/SmartMorph.html'
+          test -f 'Simscraft Studio.app/Contents/Resources/Templates/Female/F19.png'
+          test -f 'Simscraft Studio.app/Contents/Resources/Templates/Male/M19.png'
+          echo 'Native app and template assets present.'
+      - name: Create downloadable ZIP
+        shell: bash
+        run: |
+          ditto -c -k --keepParent 'Simscraft Studio.app' 'Simscraft-Studio-macOS.zip'
+      - name: Upload compiled Mac application
+        uses: actions/upload-artifact@v4
+        with:
+          name: Simscraft-Studio-macOS
+          path: Simscraft-Studio-macOS.zip
+          if-no-files-found: error
+          retention-days: 30
