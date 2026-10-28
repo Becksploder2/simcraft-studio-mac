@@ -4,17 +4,10 @@ name: Build Simcraft Studio DMG
 on:
   workflow_dispatch:
   push:
+    branches:
+      - main
     tags:
       - 'v*'
-    paths:
-      - 'Resources/Studio.html'
-      - 'Resources/SmartMorph.html'
-      - 'CASCraftMac.swift'
-      - 'Info.plist'
-      - 'Resources/**'
-      - '.github/workflows/main2.yml'
-      - 'Build_on_Mac.command'
-      - '.github/workflows/main2.yml'
 
 jobs:
   build-dmg:
@@ -32,6 +25,13 @@ jobs:
         run: |
           chmod +x Build_on_Mac.command
           ./Build_on_Mac.command
+
+      - name: Verify Windows-parity workspace source
+        shell: bash
+        run: |
+          test -s 'Resources/Studio.html'
+          grep -q 'Character Studio' 'Resources/Studio.html'
+          grep -q 'Hair & Glasses' 'Resources/Studio.html'
 
       - name: Verify application
         shell: bash
