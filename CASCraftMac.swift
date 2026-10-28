@@ -53,6 +53,9 @@ final class Studio: NSObject, NSApplicationDelegate {
         let textureItem = NSMenuItem(title:"Face Texture Lab v4.8",action:#selector(openFaceTextureLab),keyEquivalent:"");textureItem.target = self;menu.addItem(textureItem)
         let uvItem = NSMenuItem(title:"UV Face Alignment v4.9",action:#selector(openUVFaceAlign),keyEquivalent:"");uvItem.target = self;menu.addItem(uvItem)
         let tabsItem = NSMenuItem(title:"Simcraft Studio Tabs",action:#selector(openStudioTabs),keyEquivalent:"t");tabsItem.target = self;menu.addItem(tabsItem)
+        let updatesItem = NSMenuItem(title:"Check for Updates…",action:#selector(checkForUpdates),keyEquivalent:"")
+        updatesItem.target = self
+        menu.addItem(updatesItem)
         NSApp.mainMenu = menu
         window = NSWindow(contentRect: NSRect(x:0,y:0,width:1050,height:690), styleMask:[.titled,.closable,.miniaturizable,.resizable], backing:.buffered, defer:false)
         window.title = "Simcraft Studio — Mac Preview"
@@ -126,6 +129,41 @@ final class Studio: NSObject, NSApplicationDelegate {
         window.minSize = NSSize(width: 950, height: 640)
         web.loadFileURL(file, allowingReadAccessTo: resources)
         embeddedWorkspace = web
+    }
+    @objc func checkForUpdates() {
+        // A DMG download is offered, never silently installed or claimed to be signed.
+        let releasesURL = URL(string:"https://github.com/Becksploder2/simcraft-studio-mac/releases")!
+        let apiURL = URL(string:"https://api.github.com/repos/Becksploder2/simcraft-studio-mac/releases/latest")!
+        var request = URLRequest(url:apiURL)
+        request.setValue("application/vnd.github+json",forHTTPHeaderField:"Accept")
+        request.setValue("Simcraft-Studio-Mac",forHTTPHeaderField:"User-Agent")
+        URLSession.shared.dataTask(with:request) { data,response,error in
+            DispatchQueue.main.async {
+                let alert = NSAlert()
+                guard error == nil, let response = response as? HTTPURLResponse,
+                      response.statusCode == 200, let data = data,
+                      let release = (try? JSONSerialization.jsonObject(with:data)) as? [String:Any],
+                      let tag = release["tag_name"] as? String else {
+                    alert.messageText = "No published update available"
+                    alert.informativeText = "A new Mac installer has not been published as a GitHub Release yet."
+                    alert.addButton(withTitle:"OK")
+                    alert.runModal()
+                    return
+                }
+                let installed = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.0"
+                let available = tag.trimmingCharacters(in:CharacterSet(charactersIn:"vV"))
+                let isNewer = available.compare(installed,options:.numeric) == .orderedDescending
+                alert.messageText = isNewer ? "Simcraft \(available) is available" : "Simcraft is up to date"
+                alert.informativeText = isNewer ? "Installed: \(installed). Download the new DMG from GitHub Releases. Installation requires your approval." : "Installed: \(installed). Latest published: \(available)."
+                if isNewer { alert.addButton(withTitle:"View Download") }
+                alert.addButton(withTitle:"OK")
+                if isNewer && alert.runModal() == .alertFirstButtonReturn {
+                    NSWorkspace.shared.open(releasesURL)
+                } else if !isNewer {
+                    _ = alert.runModal()
+                }
+            }
+        }.resume()
     }
     @objc func openStudioTabs() {
         showEmbeddedWorkspace()
