@@ -3,6 +3,13 @@ name: Build Simcraft Studio DMG
 
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - 'Resources/Studio.html'
+      - 'Resources/SmartMorph.html'
+      - 'CASCraftMac.swift'
+      - 'Build_on_Mac.command'
+      - '.github/workflows/main2.yml'
 
 jobs:
   build-dmg:
