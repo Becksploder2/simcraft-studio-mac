@@ -1,3 +1,4 @@
+
 name: Build Simscraft Studio for macOS
 
 on:
@@ -18,14 +19,17 @@ jobs:
     runs-on: macos-15
     permissions:
       contents: read
+
     steps:
       - name: Checkout project
         uses: actions/checkout@v4
+
       - name: Build native macOS app
         shell: bash
         run: |
           chmod +x Build_on_Mac.command
           ./Build_on_Mac.command
+
       - name: Check app bundle and templates
         shell: bash
         run: |
@@ -34,14 +38,51 @@ jobs:
           test -f 'Simscraft Studio.app/Contents/Resources/Templates/Female/F19.png'
           test -f 'Simscraft Studio.app/Contents/Resources/Templates/Male/M19.png'
           echo 'Native app and template assets present.'
+
       - name: Create downloadable ZIP
         shell: bash
         run: |
-          ditto -c -k --keepParent 'Simscraft Studio.app' 'Simscraft-Studio-macOS.zip'
+          ditto -c -k --keepParent \
+            'Simscraft Studio.app' \
+            'Simscraft-Studio-macOS.zip'
+
+      - name: Create DMG installer
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mkdir -p dmg-staging
+
+          ditto \
+            'Simscraft Studio.app' \
+            'dmg-staging/Simscraft Studio.app'
+
+          ln -s /Applications dmg-staging/Applications
+
+          hdiutil create \
+            -volname 'Simscraft Studio' \
+            -srcfolder dmg-staging \
+            -format UDZO \
+            -ov \
+            'Simscraft-Studio-macOS.dmg'
+
+          test -s 'Simscraft-Studio-macOS.dmg'
+          hdiutil verify 'Simscraft-Studio-macOS.dmg'
+
+          echo 'DMG installer created successfully.'
+
       - name: Upload compiled Mac application
         uses: actions/upload-artifact@v4
         with:
           name: Simscraft-Studio-macOS
           path: Simscraft-Studio-macOS.zip
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload DMG installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: Simscraft-Studio-DMG
+          path: Simscraft-Studio-macOS.dmg
           if-no-files-found: error
           retention-days: 30
