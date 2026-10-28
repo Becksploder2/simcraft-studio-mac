@@ -71,6 +71,22 @@ jobs:
 
           echo 'DMG installer created successfully.'
 
+      - name: Create and verify DMG installer
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dmg-staging
+          ditto 'Simscraft Studio.app' 'dmg-staging/Simscraft Studio.app'
+          ln -s /Applications dmg-staging/Applications
+          hdiutil create \
+            -volname 'Simscraft Studio' \
+            -srcfolder dmg-staging \
+            -format UDZO \
+            -ov \
+            'Simscraft-Studio-macOS.dmg'
+          test -s 'Simscraft-Studio-macOS.dmg'
+          hdiutil verify 'Simscraft-Studio-macOS.dmg'
+
       - name: Upload compiled Mac application
         uses: actions/upload-artifact@v4
         with:
