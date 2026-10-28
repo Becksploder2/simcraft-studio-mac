@@ -1,4 +1,4 @@
-name: Build Simcraft Mac DMG
+name: Build Simscraft Studio for macOS
 
 on:
   workflow_dispatch:
@@ -10,10 +10,8 @@ on:
       - 'Info.plist'
       - 'Resources/**'
       - 'AppIcon.iconset/**'
-      - '.github/workflows/build-mac-dmg.yml'
+      - '.github/workflows/build-mac.yml'
 
-jobs:
-  build:
 jobs:
   build-macos:
     name: Compile macOS application
