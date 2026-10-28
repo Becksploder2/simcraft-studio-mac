@@ -4,6 +4,8 @@ name: Build Simcraft Studio DMG
 on:
   workflow_dispatch:
   push:
+    tags:
+      - 'v*'
     paths:
       - 'Resources/Studio.html'
       - 'Resources/SmartMorph.html'
@@ -16,7 +18,7 @@ jobs:
     name: Build macOS DMG Installer
     runs-on: macos-15
     permissions:
-      contents: read
+      contents: write
 
     steps:
       - name: Checkout repository
@@ -66,3 +68,11 @@ jobs:
           path: Simcraft-Studio.dmg
           if-no-files-found: error
           retention-days: 30
+
+      - name: Publish versioned Mac release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          gh release create "$GITHUB_REF_NAME" 'Simcraft-Studio.dmg' --title "Simcraft Studio $GITHUB_REF_NAME (Mac)" --notes "Mac DMG update. Unsigned builds may require manual approval in macOS Settings." --verify-tag
