@@ -143,7 +143,7 @@ struct StudioView: View {
             alert.informativeText="Open the official Mac release page?"
             alert.addButton(withTitle:"Open release")
             alert.addButton(withTitle:"Later")
-            if alert.runModal()==.alertFirstButtonReturn,
+            if alert.runModal() == .alertFirstButtonReturn,
                let release=URL(string:"https://github.com/Becksploder2/simcraft-studio-mac/releases/latest") {
                 NSWorkspace.shared.open(release)
             }
