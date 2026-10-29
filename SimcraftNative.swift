@@ -16,7 +16,7 @@ struct StudioView: View {
     @State private var message = "Project specification only; not an installable mod."
     var body: some View {
         NavigationSplitView {
-            List(tabs, id: \.self, selection: $selected) { Text($0) }
+            List(selection: $selected) { ForEach(tabs, id: \.self) { item in Text(item).tag(item) } }
                 .navigationTitle("Simcraft Studio")
                 .frame(minWidth: 220)
         } detail: {
