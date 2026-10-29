@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import UniformTypeIdentifiers
 
 @main struct SimcraftNative: App {
     var body: some Scene {
@@ -13,6 +14,15 @@ struct StudioView: View {
     @State private var category = "Gameplay interactions"
     @State private var details = ""
     @State private var compatibility = true
+    @State private var photoURL: URL?
+    @State private var templateGender = "F"
+    @State private var templateNumber = 1
+    @State private var glasses = "Yes"
+    @State private var hair = "Match reference"
+    @State private var occasion = "Everyday"
+    @State private var styles: Set<String> = []
+    @State private var catalogStatus = "No catalog imported"
+    @State private var catalogPreview = ""
     @State private var message = "Project specification only; not an installable mod."
     var body: some View {
         NavigationSplitView {
@@ -32,12 +42,77 @@ struct StudioView: View {
                     Toggle("Include compatibility checks", isOn: $compatibility)
                     Button("Export mod project JSON") { exportProject() }.disabled(details.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     Text(message).foregroundStyle(.secondary)
+                } else if selected == "Character Studio" {
+                    Button("Import reference photo") {
+                        let picker = NSOpenPanel()
+                        picker.allowedContentTypes = [.png, .jpeg, .bmp]
+                        if picker.runModal() == .OK { photoURL = picker.url }
+                    }
+                    if let url = photoURL, let image = NSImage(contentsOf: url) {
+                        Image(nsImage: image).resizable().scaledToFit().frame(maxHeight: 310)
+                    }
+                    Picker("Template group", selection: $templateGender) {
+                        Text("Female").tag("F"); Text("Male").tag("M")
+                    }
+                    Picker("Template", selection: $templateNumber) {
+                        ForEach(1...19, id: \.self) { n in Text("\(templateGender)\(n)").tag(n) }
+                    }
+                    Text("Manual template selection only; automatic morphing and CAS control are not yet ported.").foregroundStyle(.secondary)
+                } else if selected == "Hair & Glasses" {
+                    Picker("Does your Sim wear glasses?", selection: $glasses) {
+                        ForEach(["Yes","Sometimes","No"], id: \.self) { Text($0) }
+                    }
+                    Picker("Hair approach", selection: $hair) {
+                        ForEach(["Match reference","Suggest flattering styles","Manual choice"], id: \.self) { Text($0) }
+                    }
+                    Text("Recommendations require an imported CAS catalog.").foregroundStyle(.secondary)
+                } else if selected == "Clothing SmartAssist" {
+                    Picker("Outfit occasion", selection: $occasion) {
+                        ForEach(["Everyday","Formal","Athletic","Sleep","Party","Swimwear","Hot Weather","Cold Weather"], id: \.self) { Text($0) }
+                    }
+                    Text("Styles").font(.headline)
+                    ScrollView {
+                        ForEach(["Sporty","Basics","Outdoorsy","Polished","Preppy","Rocker","Country","Hipster","Boho","Streetwear","Gamer","Gala","Africana"], id: \.self) { style in
+                            Toggle(style, isOn: Binding(get: { styles.contains(style) }, set: { enabled in if enabled { styles.insert(style) } else { styles.remove(style) } }))
+                        }
+                    }.frame(maxHeight: 280)
+                    Button("Export outfit plan") { exportOutfit() }
+                } else if selected == "CC Library" {
+                    Button("Import JSON or CSV catalog") {
+                        let picker = NSOpenPanel()
+                        picker.allowedContentTypes = [.json, .commaSeparatedText]
+                        if picker.runModal() == .OK, let url = picker.url {
+                            do {
+                                let content = try String(contentsOf: url, encoding: .utf8)
+                                if url.pathExtension.lowercased() == "json" {
+                                    _ = try JSONSerialization.jsonObject(with: Data(content.utf8))
+                                }
+                                catalogPreview = String(content.prefix(16000))
+                                catalogStatus = "Catalog loaded: \(url.lastPathComponent)"
+                            } catch { catalogStatus = "Import failed: \(error.localizedDescription)" }
+                        }
+                    }
+                    Text(catalogStatus)
+                    ScrollView { Text(catalogPreview).font(.system(.caption, design: .monospaced)).textSelection(.enabled) }
+                } else if selected == "Settings" {
+                    Text("Native desktop preview. The HTML workspace is not used by this interface.")
+                    Text("Photo import, manual template selection, preferences, outfit plans, CC catalog import and AI mod specifications are available.")
                 } else {
                     Text("Native migration in progress. The previous HTML tool has not yet been ported.").foregroundStyle(.secondary)
                 }
                 Spacer()
             }.padding(28).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
+    }
+    func exportOutfit() {
+        let panel = NSSavePanel()
+        panel.nameFieldStringValue = "simcraft-outfit.json"
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        let payload: [String: Any] = ["occasion": occasion, "styles": Array(styles).sorted()]
+        do {
+            let data = try JSONSerialization.data(withJSONObject: payload, options: [.prettyPrinted, .sortedKeys])
+            try data.write(to: url)
+        } catch { message = "Outfit export failed: \(error.localizedDescription)" }
     }
     func exportProject() {
         let panel = NSSavePanel()
