@@ -25,6 +25,7 @@ struct StudioView: View {
     @State private var catalogPreview = ""
     @State private var casStatus = "CAS not checked"
     @State private var casCaptureURL: URL?
+    @State private var backgroundURL: URL?
     @State private var message = "Project specification only; not an installable mod."
     var body: some View {
         NavigationSplitView {
@@ -64,6 +65,15 @@ struct StudioView: View {
                         Button("Capture Sims 4 window") { captureGame() }
                     }
                     Text(casStatus).foregroundStyle(.secondary)
+                    Button("Choose CAS workspace background") {
+                        let picker = NSOpenPanel()
+                        picker.allowedContentTypes = [.png, .jpeg, .bmp]
+                        if picker.runModal() == .OK { backgroundURL = picker.url }
+                    }
+                    if let url = backgroundURL, let image = NSImage(contentsOf: url) {
+                        Image(nsImage: image).resizable().scaledToFit().frame(maxHeight: 180)
+                    }
+                    Text("Background is a local preview; this does not replace the in-game CAS background.").foregroundStyle(.secondary)
                     Text("Window detection and capture only. Automatic CAS morphing is not yet implemented.").foregroundStyle(.secondary)
                 } else if selected == "Hair & Glasses" {
                     Picker("Does your Sim wear glasses?", selection: $glasses) {
