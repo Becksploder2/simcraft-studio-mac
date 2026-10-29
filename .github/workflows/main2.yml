@@ -78,8 +78,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          if gh release view v1.0.1 >/dev/null 2>&1; then
-            echo "Release v1.0.1 already exists; leaving it unchanged."
+          if gh release view v1.0.2 >/dev/null 2>&1; then
+            echo "Release v1.0.2 already exists; leaving it unchanged."
           else
-            gh release create v1.0.1 'Simcraft-Studio.dmg' --target "$GITHUB_SHA" --title "Simcraft Studio 1.0.1 (Mac)" --notes "Version 1.0.1: synchronized workspace and update infrastructure. Mac updates are offered as a manual DMG download."
+            gh release create v1.0.2 'Simcraft-Studio.dmg' --target "$GITHUB_SHA" --title "Simcraft Studio 1.0.1 (Mac)" --notes "Version 1.0.2: AI Mod Studio tab and desktop workspace. Mac updates are offered as a manual DMG download."
           fi
