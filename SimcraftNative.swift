@@ -139,13 +139,13 @@ struct StudioView: View {
         guard let url=URL(string:"https://api.github.com/repos/Becksploder2/simcraft-studio-mac/releases/latest") else { return }
         do {
             var request=URLRequest(url:url)
-            request.setValue("SimcraftStudio/1.0.6", forHTTPHeaderField:"User-Agent")
+            request.setValue("SimcraftStudio/1.0.8", forHTTPHeaderField:"User-Agent")
             let (data,_) = try await URLSession.shared.data(for:request)
             guard let json=try JSONSerialization.jsonObject(with:data) as? [String:Any],
                   let tag=json["tag_name"] as? String else { updateStatus="Invalid release information"; return }
             let latest=tag.trimmingCharacters(in:CharacterSet(charactersIn:"vV"))
-            if latest.compare("1.0.6",options:.numeric) != .orderedDescending {
-                updateStatus="Up to date (v1.0.6)."; return
+            if latest.compare("1.0.8",options:.numeric) != .orderedDescending {
+                updateStatus="Up to date (v1.0.8)."; return
             }
             updateStatus="Update available: \(tag)"
             let alert=NSAlert()
