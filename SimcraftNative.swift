@@ -1,6 +1,8 @@
 import SwiftUI
 import AppKit
 import UniformTypeIdentifiers
+import Vision
+import ImageIO
 
 @main struct SimcraftNative: App {
     var body: some Scene {
@@ -9,12 +11,15 @@ import UniformTypeIdentifiers
 }
 struct StudioView: View {
     let tabs = ["Character Studio","Hair & Glasses","Clothing SmartAssist","CC Library","Face Texture Studio","Glasses Creator","CAS Mod Studio","AI Mod Studio","UV Face Alignment","Buildcraft","Settings"]
-    @State private var selected = "AI Mod Studio"
+    @State private var selected = "Character Studio"
     @State private var modName = ""
     @State private var category = "Gameplay interactions"
     @State private var details = ""
     @State private var compatibility = true
     @State private var photoURL: URL?
+    @State private var photoPreview: NSImage?
+    @State private var faceStatus = "Face recognition: no photo analyzed"
+    @State private var analyzingFace = false
     @State private var templateGender = "F"
     @State private var templateNumber = 1
     @State private var glasses = "Yes"
@@ -42,7 +47,7 @@ struct StudioView: View {
                             .frame(width: geometry.size.width, height: geometry.size.height)
                             .clipped()
                     }.ignoresSafeArea()
-                    Color.black.opacity(0.62).ignoresSafeArea()
+                    Color.black.opacity(0.35).ignoresSafeArea()
                 }
             VStack(alignment: .leading, spacing: 18) {
                 Text(selected).font(.largeTitle).bold()
@@ -60,11 +65,13 @@ struct StudioView: View {
                     Button("Import reference photo") {
                         let picker = NSOpenPanel()
                         picker.allowedContentTypes = [.png, .jpeg, .bmp]
-                        if picker.runModal() == .OK { photoURL = picker.url }
+                        if picker.runModal() == .OK, let url = picker.url { importPhoto(url) }
                     }
-                    if let url = photoURL, let image = NSImage(contentsOf: url) {
+                    if let image = photoPreview {
                         Image(nsImage: image).resizable().scaledToFit().frame(maxHeight: 310)
                     }
+                    Button(analyzingFace ? "Analyzing..." : "Analyze face landmarks") { analyzeFace() }.disabled(photoURL == nil || analyzingFace)
+                    Text(faceStatus).foregroundStyle(.secondary)
                     Picker("Template group", selection: $templateGender) {
                         Text("Female").tag("F"); Text("Male").tag("M")
                     }
@@ -158,6 +165,53 @@ struct StudioView: View {
                 NSWorkspace.shared.open(release)
             }
         } catch { updateStatus="Update check failed: \(error.localizedDescription)" }
+    }
+    @MainActor func importPhoto(_ url: URL) {
+        photoURL = url
+        photoPreview = nil
+        faceStatus = "Loading photo..."
+        Task {
+            let image: NSImage? = await Task.detached(priority: .userInitiated) {
+                guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
+                      let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
+                      let width = properties[kCGImagePropertyPixelWidth] as? Int,
+                      let height = properties[kCGImagePropertyPixelHeight] as? Int,
+                      width > 0, height > 0, width <= 8192, height <= 8192,
+                      Int64(width) * Int64(height) <= 30_000_000,
+                      let cg = CGImageSourceCreateThumbnailAtIndex(source, 0, [
+                        kCGImageSourceCreateThumbnailFromImageAlways: true,
+                        kCGImageSourceThumbnailMaxPixelSize: 1200
+                      ] as CFDictionary) else { return nil }
+                return NSImage(cgImage: cg, size: NSSize(width: cg.width, height: cg.height))
+            }.value
+            photoPreview = image
+            faceStatus = image == nil ? "Photo unavailable or too large." : "Photo loaded. Ready to analyze."
+        }
+    }
+    @MainActor func analyzeFace() {
+        guard let url = photoURL, !analyzingFace else { return }
+        analyzingFace = true
+        faceStatus = "Analyzing face..."
+        Task {
+            let result: String = await Task.detached(priority: .userInitiated) {
+                do {
+                    let request = VNDetectFaceLandmarksRequest()
+                    let handler = VNImageRequestHandler(url: url, options: [:])
+                    try handler.perform([request])
+                    guard let faces = request.results, !faces.isEmpty else {
+                        return "No face detected. Use a clear frontal photo."
+                    }
+                    let face = faces[0]
+                    let landmarks = face.landmarks
+                    let regions = [landmarks?.leftEye, landmarks?.rightEye, landmarks?.nose,
+                                   landmarks?.outerLips, landmarks?.faceContour].compactMap { $0 }
+                    let pointCount = regions.reduce(0) { $0 + $1.pointCount }
+                    return "Face recognized: \\(faces.count) face(s), \\(pointCount) landmark points in key regions. Template matching is not yet implemented."
+                } catch { return "Face analysis failed: \\(error.localizedDescription)" }
+            }.value
+            faceStatus = result
+            analyzingFace = false
+        }
     }
     func detectGame() {
         let matches = NSWorkspace.shared.runningApplications.filter { app in
