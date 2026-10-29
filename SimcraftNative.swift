@@ -23,6 +23,8 @@ struct StudioView: View {
     @State private var styles: Set<String> = []
     @State private var catalogStatus = "No catalog imported"
     @State private var catalogPreview = ""
+    @State private var casStatus = "CAS not checked"
+    @State private var casCaptureURL: URL?
     @State private var message = "Project specification only; not an installable mod."
     var body: some View {
         NavigationSplitView {
@@ -57,7 +59,12 @@ struct StudioView: View {
                     Picker("Template", selection: $templateNumber) {
                         ForEach(1...19, id: \.self) { n in Text("\(templateGender)\(n)").tag(n) }
                     }
-                    Text("Manual template selection only; automatic morphing and CAS control are not yet ported.").foregroundStyle(.secondary)
+                    HStack {
+                        Button("Detect The Sims 4") { detectGame() }
+                        Button("Capture Sims 4 window") { captureGame() }
+                    }
+                    Text(casStatus).foregroundStyle(.secondary)
+                    Text("Window detection and capture only. Automatic CAS morphing is not yet implemented.").foregroundStyle(.secondary)
                 } else if selected == "Hair & Glasses" {
                     Picker("Does your Sim wear glasses?", selection: $glasses) {
                         ForEach(["Yes","Sometimes","No"], id: \.self) { Text($0) }
@@ -103,6 +110,31 @@ struct StudioView: View {
                 Spacer()
             }.padding(28).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
+    }
+    func detectGame() {
+        let matches = NSWorkspace.shared.runningApplications.filter { app in
+            let name = (app.localizedName ?? "").lowercased()
+            return name.contains("the sims 4") || name.contains("sims 4")
+        }
+        casStatus = matches.isEmpty ? "The Sims 4 is not running." : "The Sims 4 process detected. Enter CAS before capturing."
+    }
+    func captureGame() {
+        let matches = NSWorkspace.shared.runningApplications.filter { app in
+            let name = (app.localizedName ?? "").lowercased()
+            return name.contains("the sims 4") || name.contains("sims 4")
+        }
+        guard !matches.isEmpty else { casStatus = "The Sims 4 is not running."; return }
+        let picker = NSSavePanel()
+        picker.nameFieldStringValue = "Simcraft-CAS-Capture.png"
+        guard picker.runModal() == .OK, let url = picker.url else { return }
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: "/usr/sbin/screencapture")
+        task.arguments = ["-x", url.path]
+        do {
+            try task.run()
+            task.waitUntilExit()
+            casStatus = task.terminationStatus == 0 ? "Screen captured. CAS mode is not automatically verified." : "Capture failed. Check macOS Screen Recording permissions."
+        } catch { casStatus = "Capture failed: \(error.localizedDescription)" }
     }
     func exportOutfit() {
         let panel = NSSavePanel()
