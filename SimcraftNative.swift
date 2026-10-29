@@ -26,6 +26,7 @@ struct StudioView: View {
     @State private var casStatus = "CAS not checked"
     @State private var casCaptureURL: URL?
     @State private var backgroundURL: URL?
+    @State private var updateStatus = "Update status: not checked"
     @State private var message = "Project specification only; not an installable mod."
     var body: some View {
         NavigationSplitView {
@@ -113,6 +114,8 @@ struct StudioView: View {
                     ScrollView { Text(catalogPreview).font(.system(.caption, design: .monospaced)).textSelection(.enabled) }
                 } else if selected == "Settings" {
                     Text("Native desktop preview. The HTML workspace is not used by this interface.")
+                    Button("Check for updates") { Task { await checkForUpdates() } }
+                    Text(updateStatus).foregroundStyle(.secondary)
                     Text("Photo import, manual template selection, preferences, outfit plans, CC catalog import and AI mod specifications are available.")
                 } else {
                     Text("Native migration in progress. The previous HTML tool has not yet been ported.").foregroundStyle(.secondary)
@@ -120,6 +123,31 @@ struct StudioView: View {
                 Spacer()
             }.padding(28).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
+    }
+    @MainActor func checkForUpdates() async {
+        updateStatus = "Checking GitHub releases..."
+        guard let url=URL(string:"https://api.github.com/repos/Becksploder2/simcraft-studio-mac/releases/latest") else { return }
+        do {
+            var request=URLRequest(url:url)
+            request.setValue("SimcraftStudio/1.0.6", forHTTPHeaderField:"User-Agent")
+            let (data,_) = try await URLSession.shared.data(for:request)
+            guard let json=try JSONSerialization.jsonObject(with:data) as? [String:Any],
+                  let tag=json["tag_name"] as? String else { updateStatus="Invalid release information"; return }
+            let latest=tag.trimmingCharacters(in:CharacterSet(charactersIn:"vV"))
+            if latest.compare("1.0.6",options:.numeric) != .orderedDescending {
+                updateStatus="Up to date (v1.0.6)."; return
+            }
+            updateStatus="Update available: \(tag)"
+            let alert=NSAlert()
+            alert.messageText="Simcraft Studio \(tag) is available"
+            alert.informativeText="Open the official Mac release page?"
+            alert.addButton(withTitle:"Open release")
+            alert.addButton(withTitle:"Later")
+            if alert.runModal()==.alertFirstButtonReturn,
+               let release=URL(string:"https://github.com/Becksploder2/simcraft-studio-mac/releases/latest") {
+                NSWorkspace.shared.open(release)
+            }
+        } catch { updateStatus="Update check failed: \(error.localizedDescription)" }
     }
     func detectGame() {
         let matches = NSWorkspace.shared.runningApplications.filter { app in
