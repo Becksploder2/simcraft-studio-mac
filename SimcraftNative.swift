@@ -34,6 +34,16 @@ struct StudioView: View {
                 .navigationTitle("Simcraft Studio")
                 .frame(minWidth: 220)
         } detail: {
+            ZStack {
+                if let url = Bundle.main.url(forResource: "Default CAS Room", withExtension: "png", subdirectory: "Backgrounds"),
+                   let room = NSImage(contentsOf: url) {
+                    GeometryReader { geometry in
+                        Image(nsImage: room).resizable().scaledToFill()
+                            .frame(width: geometry.size.width, height: geometry.size.height)
+                            .clipped()
+                    }.ignoresSafeArea()
+                    Color.black.opacity(0.62).ignoresSafeArea()
+                }
             VStack(alignment: .leading, spacing: 18) {
                 Text(selected).font(.largeTitle).bold()
                 if selected == "AI Mod Studio" {
