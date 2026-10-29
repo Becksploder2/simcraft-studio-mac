@@ -34,11 +34,17 @@ struct StudioView: View {
     @State private var updateStatus = "Update status: not checked"
     @State private var message = "Project specification only; not an installable mod."
     var body: some View {
-        NavigationSplitView {
-            List(selection: $selected) { ForEach(tabs, id: \.self) { item in Text(item).tag(item) } }
-                .navigationTitle("Simcraft Studio")
-                .frame(minWidth: 220)
-        } detail: {
+        VStack(spacing: 0) {
+            ScrollView(.horizontal, showsIndicators: true) {
+                HStack(spacing: 2) {
+                    ForEach(tabs, id: \.self) { item in
+                        Button(item) { selected = item }
+                            .buttonStyle(.bordered)
+                            .tint(selected == item ? .accentColor : .gray)
+                            .controlSize(.small)
+                    }
+                }.padding(.horizontal, 6).padding(.vertical, 5)
+            }
             ZStack {
                 if let url = Bundle.main.url(forResource: "Default CAS Room", withExtension: "png", subdirectory: "Backgrounds"),
                    let room = NSImage(contentsOf: url) {
@@ -49,8 +55,9 @@ struct StudioView: View {
                     }.ignoresSafeArea()
                     Color.black.opacity(0.35).ignoresSafeArea()
                 }
-            VStack(alignment: .leading, spacing: 18) {
-                Text(selected).font(.largeTitle).bold()
+            ScrollView(.vertical) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(selected == "Character Studio" ? "Character Studio — reference photo and templates" : selected).font(.headline).bold()
                 if selected == "AI Mod Studio" {
                     TextField("Mod name", text: $modName)
                     Picker("Mod category", selection: $category) {
@@ -67,22 +74,26 @@ struct StudioView: View {
                         picker.allowedContentTypes = [.png, .jpeg, .bmp]
                         if picker.runModal() == .OK, let url = picker.url { importPhoto(url) }
                     }
-                    if let image = photoPreview {
-                        Image(nsImage: image).resizable().scaledToFit().frame(maxHeight: 310)
-                    }
+                    Text(photoURL == nil ? "Ready to import a reference photo" : "Reference photo imported")
+                    ZStack {
+                        Color(red: 0.13, green: 0.17, blue: 0.25)
+                        if let image = photoPreview { Image(nsImage: image).resizable().scaledToFit() }
+                    }.frame(width: 420, height: 330)
                     Button(analyzingFace ? "Analyzing..." : "Analyze face landmarks") { analyzeFace() }.disabled(photoURL == nil || analyzingFace)
                     Text(faceStatus).foregroundStyle(.secondary)
                     Picker("Template group", selection: $templateGender) {
                         Text("Female").tag("F"); Text("Male").tag("M")
                     }
-                    Picker("Template", selection: $templateNumber) {
+                    Picker("Template selection (manual; auto-detection not ported)", selection: $templateNumber) {
                         ForEach(1...19, id: \.self) { n in Text("\(templateGender)\(n)").tag(n) }
                     }
-                    HStack {
-                        Button("Detect The Sims 4") { detectGame() }
-                        Button("Capture Sims 4 window") { captureGame() }
+                    if let url = Bundle.main.url(forResource: "\(templateGender)\(templateNumber)", withExtension: "png", subdirectory: "Templates/\(templateGender == "F" ? "Female" : "Male")"), let templateImage = NSImage(contentsOf: url) {
+                        Image(nsImage: templateImage).resizable().scaledToFit().frame(width: 220, height: 180)
                     }
+                    Button("Detect The Sims 4") { detectGame() }
+                    Button("Capture Sims 4 window") { captureGame() }
                     Text(casStatus).foregroundStyle(.secondary)
+                    Text("CAS workspace background (local preview)")
                     Button("Choose CAS workspace background") {
                         let picker = NSOpenPanel()
                         picker.allowedContentTypes = [.png, .jpeg, .bmp]
@@ -138,8 +149,11 @@ struct StudioView: View {
                     Text("Native migration in progress. The previous HTML tool has not yet been ported.").foregroundStyle(.secondary)
                 }
                 Spacer()
-            }.padding(28).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        }.task { await checkForUpdates() }
+            }.padding(24).frame(maxWidth: .infinity, alignment: .topLeading)
+            }
+            }.frame(maxWidth: .infinity, maxHeight: .infinity)
+        }.frame(minWidth: 950, minHeight: 650)
+         .task { await checkForUpdates() }
          .task { while !Task.isCancelled { detectGame(); try? await Task.sleep(for: .seconds(3)) } }
     }
     @MainActor func checkForUpdates() async {
