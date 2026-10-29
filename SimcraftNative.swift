@@ -140,6 +140,7 @@ struct StudioView: View {
                 Spacer()
             }.padding(28).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }.task { await checkForUpdates() }
+         .task { while !Task.isCancelled { detectGame(); try? await Task.sleep(for: .seconds(3)) } }
     }
     @MainActor func checkForUpdates() async {
         updateStatus = "Checking GitHub releases..."
@@ -185,7 +186,8 @@ struct StudioView: View {
                 return NSImage(cgImage: cg, size: NSSize(width: cg.width, height: cg.height))
             }.value
             photoPreview = image
-            faceStatus = image == nil ? "Photo unavailable or too large." : "Photo loaded. Ready to analyze."
+            faceStatus = image == nil ? "Photo unavailable or too large." : "Photo loaded. Analyzing..."
+            if image != nil { analyzeFace() }
         }
     }
     @MainActor func analyzeFace() {
@@ -218,7 +220,7 @@ struct StudioView: View {
             let name = (app.localizedName ?? "").lowercased()
             return name.contains("the sims 4") || name.contains("sims 4")
         }
-        casStatus = matches.isEmpty ? "The Sims 4 is not running." : "The Sims 4 process detected. Enter CAS before capturing."
+        casStatus = matches.isEmpty ? "The Sims 4 is not running." : "The Sims 4 is running. CAS mode cannot be verified from process detection alone."
     }
     func captureGame() {
         let matches = NSWorkspace.shared.runningApplications.filter { app in
