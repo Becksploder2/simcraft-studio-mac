@@ -180,8 +180,12 @@ struct StudioView: View {
         task.arguments = ["-x", url.path]
         do {
             try task.run()
-            task.waitUntilExit()
-            casStatus = task.terminationStatus == 0 ? "Screen captured. CAS mode is not automatically verified." : "Capture failed. Check macOS Screen Recording permissions."
+            task.terminationHandler = { finished in
+                DispatchQueue.main.async {
+                    casStatus = finished.terminationStatus == 0 ? "Screen captured. CAS mode is not automatically verified." : "Capture failed. Check macOS Screen Recording permissions."
+                }
+            }
+            casStatus = "Capturing screen..."
         } catch { casStatus = "Capture failed: \(error.localizedDescription)" }
     }
     func exportOutfit() {
