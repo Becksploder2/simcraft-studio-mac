@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - 'CASCraftMac.swift'
+      - 'SimcraftNative.swift'
+      - 'Info.plist'
       - 'Build_on_Mac.command'
       - 'Resources/**'
       - '.github/workflows/main2.yml'
@@ -30,11 +32,11 @@ jobs:
           name: Simcraft-Studio-Mac-Portable
           path: Simcraft-Studio-Mac-Portable.zip
           if-no-files-found: error
-      - name: Publish rollback release
+      - name: Publish portable update release
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          if ! gh release view v1.0.7 >/dev/null 2>&1; then
-            gh release create v1.0.7 Simcraft-Studio-Mac-Portable.zip --target "$GITHUB_SHA" --title "Simcraft Studio 1.0.7 Mac Portable Rollback" --notes "Restores previous Mac app and resources; no DMG installer. Native tab migration pending."
+          if ! gh release view v1.0.8 >/dev/null 2>&1; then
+            gh release create v1.0.8 Simcraft-Studio-Mac-Portable.zip --target "$GITHUB_SHA" --title "Simcraft Studio 1.0.8 Mac Portable Update" --notes "Native tabbed workspace and original CAS room background with capture safeguards. Portable ZIP, no installer."
           fi
