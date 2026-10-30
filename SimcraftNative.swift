@@ -26,6 +26,7 @@ struct StudioView: View {
     @State private var hair = "Match reference"
     @State private var occasion = "Everyday"
     @State private var styles: Set<String> = []
+    @State private var packageReport = "No package imported."
     @State private var catalogStatus = "No catalog imported"
     @State private var catalogPreview = ""
     @State private var casStatus = "CAS not checked"
@@ -140,6 +141,15 @@ struct StudioView: View {
                     }
                     Text(catalogStatus)
                     ScrollView { Text(catalogPreview).font(.system(.caption, design: .monospaced)).textSelection(.enabled) }
+                } else if selected == "CAS Mod Studio" {
+                    Text("CAS Mod Studio — inspect existing Sims 4 packages (read-only)")
+                    Button("Import .package reference") {
+                        let picker = NSOpenPanel()
+                        picker.allowedContentTypes = [UTType(filenameExtension: "package") ?? .data]
+                        if picker.runModal() == .OK, let url = picker.url { inspectPackage(url) }
+                    }
+                    ScrollView { Text(packageReport).font(.system(.body, design: .monospaced)).textSelection(.enabled) }
+                    Text("Original packages are not modified. Resource extraction and editing are not yet implemented.").foregroundStyle(.secondary)
                 } else if selected == "Settings" {
                     Text("Native desktop preview. The HTML workspace is not used by this interface.")
                     Button("Check for updates") { Task { await checkForUpdates() } }
@@ -227,6 +237,28 @@ struct StudioView: View {
             }.value
             faceStatus = result
             analyzingFace = false
+        }
+    }
+    @MainActor func inspectPackage(_ url: URL) {
+        packageReport = "Inspecting package..."
+        Task.detached(priority: .userInitiated) {
+            let result: String
+            do {
+                let handle = try FileHandle(forReadingFrom: url)
+                defer { try? handle.close() }
+                let header = try handle.read(upToCount: 96) ?? Data()
+                guard header.count >= 96, String(data: header.prefix(4), encoding: .ascii) == "DBPF" else {
+                    throw NSError(domain: "Simcraft", code: 1, userInfo: [NSLocalizedDescriptionKey: "Not a valid DBPF package header."])
+                }
+                let bytes = Array(header)
+                let count = UInt32(bytes[36]) | UInt32(bytes[37]) << 8 | UInt32(bytes[38]) << 16 | UInt32(bytes[39]) << 24
+                guard count <= 2_000_000 else {
+                    throw NSError(domain: "Simcraft", code: 2, userInfo: [NSLocalizedDescriptionKey: "Resource count exceeds safety limit."])
+                }
+                let size = (try FileManager.default.attributesOfItem(atPath: url.path)[.size] as? NSNumber)?.int64Value ?? 0
+                result = "File: \\(url.lastPathComponent)\\nSize: \\(size) bytes\\nFormat: DBPF\\nHeader resource count: \\(count)\\n\\nRead-only reference inspection. Resource extraction and editing are not yet implemented."
+            } catch { result = "Package inspection failed: \\(error.localizedDescription)" }
+            await MainActor.run { packageReport = result }
         }
     }
     func detectGame() {
