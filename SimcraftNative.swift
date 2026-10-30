@@ -157,6 +157,7 @@ struct StudioView: View {
                         buildStatus = casStatus + " Build Mode is not verified."
                     }
                     Text(buildStatus)
+                    Button("Capture Build/Buy screen") { captureBuildMode() }
                     Button("Create starter build plan") {
                         guard !buildDescription.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
                             buildStatus = "Describe the building first."; return
@@ -286,6 +287,30 @@ struct StudioView: View {
             } catch { result = "Package inspection failed: \\(error.localizedDescription)" }
             await MainActor.run { packageReport = result }
         }
+    }
+    func captureBuildMode() {
+        let running = NSWorkspace.shared.runningApplications.contains {
+            let name = ($0.localizedName ?? "").lowercased()
+            return name.contains("the sims 4") || name.contains("sims 4")
+        }
+        guard running else { buildStatus = "The Sims 4 is not running."; return }
+        let picker = NSSavePanel()
+        picker.nameFieldStringValue = "Simcraft-BuildBuy-Capture.png"
+        guard picker.runModal() == .OK, let url = picker.url else { return }
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: "/usr/sbin/screencapture")
+        task.arguments = ["-x", url.path]
+        do {
+            try task.run()
+            task.terminationHandler = { finished in
+                DispatchQueue.main.async {
+                    buildStatus = finished.terminationStatus == 0
+                        ? "Screenshot saved. Build/Buy mode not yet verified."
+                        : "Capture failed. Check Screen Recording permissions."
+                }
+            }
+            buildStatus = "Capturing screen..."
+        } catch { buildStatus = "Capture failed: \\(error.localizedDescription)" }
     }
     func exportBuildcraft() {
         guard !buildDescription.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
