@@ -26,6 +26,11 @@ struct StudioView: View {
     @State private var hair = "Match reference"
     @State private var occasion = "Everyday"
     @State private var styles: Set<String> = []
+    @State private var buildDescription = ""
+    @State private var buildWidth = 30
+    @State private var buildDepth = 20
+    @State private var buildStatus = "Not connected to Build Mode."
+    @State private var buildDraft = ""
     @State private var packageReport = "No package imported."
     @State private var catalogStatus = "No catalog imported"
     @State private var catalogPreview = ""
@@ -141,6 +146,27 @@ struct StudioView: View {
                     }
                     Text(catalogStatus)
                     ScrollView { Text(catalogPreview).font(.system(.caption, design: .monospaced)).textSelection(.enabled) }
+                } else if selected == "Buildcraft" {
+                    Text("Buildcraft — Sims 4 Build Mode workspace (early prototype)").font(.headline)
+                    Text("Describe the building or lot")
+                    TextEditor(text: $buildDescription).frame(height: 110).border(.gray)
+                    Stepper("Lot width: \\(buildWidth) tiles", value: $buildWidth, in: 10...64)
+                    Stepper("Lot depth: \\(buildDepth) tiles", value: $buildDepth, in: 10...64)
+                    Button("Detect The Sims 4") {
+                        detectGame()
+                        buildStatus = casStatus + " Build Mode is not verified."
+                    }
+                    Text(buildStatus)
+                    Button("Create starter build plan") {
+                        guard !buildDescription.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                            buildStatus = "Describe the building first."; return
+                        }
+                        buildDraft = "BUILDCRAFT DRAFT PLAN\\nLot: \\(buildWidth) x \\(buildDepth) tiles\\nDescription: \\(buildDescription)\\n\\nDraft specification only. AI generation and construction are not connected."
+                        buildStatus = "Draft created locally. No game actions performed."
+                    }
+                    Text(buildDraft).textSelection(.enabled)
+                    Button("Export Buildcraft project") { exportBuildcraft() }
+                    Text("No automated game input. Build Mode must be verified before construction.").foregroundStyle(.secondary)
                 } else if selected == "CAS Mod Studio" {
                     Text("CAS Mod Studio — inspect existing Sims 4 packages (read-only)")
                     Button("Import .package reference") {
@@ -260,6 +286,26 @@ struct StudioView: View {
             } catch { result = "Package inspection failed: \\(error.localizedDescription)" }
             await MainActor.run { packageReport = result }
         }
+    }
+    func exportBuildcraft() {
+        guard !buildDescription.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            buildStatus = "Describe the building first."; return
+        }
+        let picker = NSSavePanel()
+        picker.nameFieldStringValue = "buildcraft-project.json"
+        guard picker.runModal() == .OK, let url = picker.url else { return }
+        do {
+            let data = try JSONSerialization.data(withJSONObject: [
+                "format": "simcraft-buildcraft-project",
+                "schemaVersion": 1,
+                "lotWidth": buildWidth,
+                "lotDepth": buildDepth,
+                "description": buildDescription,
+                "constructionEnabled": false
+            ], options: [.prettyPrinted, .sortedKeys])
+            try data.write(to: url)
+            buildStatus = "Buildcraft project exported."
+        } catch { buildStatus = "Export failed: \\(error.localizedDescription)" }
     }
     func detectGame() {
         let matches = NSWorkspace.shared.runningApplications.filter { app in
