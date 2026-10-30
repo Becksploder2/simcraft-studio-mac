@@ -190,7 +190,7 @@ struct StudioView: View {
             }.frame(maxWidth: .infinity, maxHeight: .infinity)
         }.frame(minWidth: 950, minHeight: 650)
          .task { await checkForUpdates() }
-         .task { while !Task.isCancelled { detectGame(); try? await Task.sleep(for: .seconds(3)) } }
+         .task { while !Task.isCancelled { detectGame(); buildStatus = casStatus + " Build/Buy mode not yet verified."; try? await Task.sleep(for: .seconds(3)) } }
     }
     @MainActor func checkForUpdates() async {
         updateStatus = "Checking GitHub releases..."
