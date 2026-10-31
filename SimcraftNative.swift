@@ -96,41 +96,12 @@ struct StudioView: View {
                     if let url = Bundle.main.url(forResource: "\(templateGender)\(templateNumber)", withExtension: "png", subdirectory: "Templates/\(templateGender == "F" ? "Female" : "Male")"), let templateImage = NSImage(contentsOf: url) {
                         Image(nsImage: templateImage).resizable().scaledToFit().frame(width: 220, height: 180)
                     }
-                    Text("Original SmartMorph prototype controls").font(.headline)
-                    Button("Reset framing") { casStatus = "Preview framing reset." }
-                    Button("Auto-frame face (when supported)") { casStatus = "Automatic framing requires the face engine." }
-                    Button("Save current view PNG") {
-                        guard let image = photoPreview, let tiff = image.tiffRepresentation,
-                              let rep = NSBitmapImageRep(data: tiff),
-                              let png = rep.representation(using: .png, properties: [:]) else {
-                            casStatus = "Import a photo first."; return
-                        }
-                        let picker = NSSavePanel()
-                        picker.nameFieldStringValue = "Simcraft-Face-Preview.png"
-                        picker.begin { response in
-                            guard response == .OK, let url = picker.url else { return }
-                            do { try png.write(to: url); casStatus = "Preview PNG saved." }
-                            catch { casStatus = "Save failed: \\(error.localizedDescription)" }
-                        }
-                    }
-                    Button("Prepare SmartMorph plan") {
-                        casStatus = photoURL == nil ? "Import a reference photo first." : "SmartMorph plan ready to export (manual template selection)."
-                    }
-                    Button("Export editable plan JSON") {
-                        guard let photoURL = photoURL else { casStatus = "Import a reference photo first."; return }
-                        let picker = NSSavePanel()
-                        picker.nameFieldStringValue = "SmartMorph-plan.json"
-                        picker.begin { response in
-                            guard response == .OK, let url = picker.url else { return }
-                            do {
-                                let data = try JSONSerialization.data(withJSONObject: ["format":"simcraft-smartmorph-plan","referencePhoto":photoURL.path,"automaticMorphing":false],options:[.prettyPrinted])
-                                try data.write(to:url)
-                                casStatus = "Editable plan exported."
-                            } catch { casStatus = "Export failed: \\(error.localizedDescription)" }
-                        }
-                    }
+                    Text("SIM MORPH STUDIO — ORIGINAL CONTROLS").font(.headline)
+                    Button("Refresh Preview") { casStatus = "Preview refreshed." }
+                    Button("Set CAS Click Point") { casStatus = "CAS click calibration requires a game connection; no click sent." }
+                    Button("Apply One CAS Click") { casStatus = "No CAS click sent: calibration and game control are not available." }
                     Button("Detect The Sims 4") { detectGame() }
-                    Button("Import CAS screenshot") {
+                    Button("Capture Current CAS Face") {
                         let picker = NSOpenPanel()
                         picker.allowedContentTypes = [.png, .jpeg]
                         picker.begin { response in
