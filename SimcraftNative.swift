@@ -100,7 +100,8 @@ struct StudioView: View {
                     Button("Import CAS screenshot") {
                         let picker = NSOpenPanel()
                         picker.allowedContentTypes = [.png, .jpeg]
-                        if picker.runModal() == .OK, let url = picker.url {
+                        picker.begin { response in
+                            guard response == .OK, let url = picker.url else { return }
                             casStatus = "CAS screenshot selected: \\(url.lastPathComponent). Mode not verified."
                         }
                     }
@@ -166,7 +167,8 @@ struct StudioView: View {
                     Button("Import Build/Buy screenshot") {
                         let picker = NSOpenPanel()
                         picker.allowedContentTypes = [.png, .jpeg]
-                        if picker.runModal() == .OK, let url = picker.url {
+                        picker.begin { response in
+                            guard response == .OK, let url = picker.url else { return }
                             buildStatus = "Build/Buy screenshot selected: \\(url.lastPathComponent). Mode not verified."
                         }
                     }
