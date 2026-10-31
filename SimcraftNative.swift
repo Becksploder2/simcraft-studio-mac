@@ -105,6 +105,16 @@ struct StudioView: View {
                             casStatus = "CAS screenshot selected: \\(url.lastPathComponent). Mode not verified."
                         }
                     }
+                    Text("Or drop a screenshot here (no file picker)")
+                        .padding(12).frame(maxWidth: 520).overlay(RoundedRectangle(cornerRadius: 6).stroke(.gray))
+                        .onDrop(of: [UTType.fileURL.identifier], isTargeted: nil) { providers in
+                            guard let provider = providers.first else { return false }
+                            _ = provider.loadObject(ofClass: URL.self) { url, _ in
+                                guard let url = url, ["png","jpg","jpeg"].contains(url.pathExtension.lowercased()) else { return }
+                                DispatchQueue.main.async { casStatus = "CAS screenshot selected: \\(url.lastPathComponent). Mode not verified." }
+                            }
+                            return true
+                        }
                     Text(casStatus).foregroundStyle(.secondary)
                     Text("CAS workspace background (local preview)")
                     Button("Choose CAS workspace background") {
@@ -172,6 +182,16 @@ struct StudioView: View {
                             buildStatus = "Build/Buy screenshot selected: \\(url.lastPathComponent). Mode not verified."
                         }
                     }
+                    Text("Or drop a Build/Buy screenshot here (no file picker)")
+                        .padding(12).frame(maxWidth: 520).overlay(RoundedRectangle(cornerRadius: 6).stroke(.gray))
+                        .onDrop(of: [UTType.fileURL.identifier], isTargeted: nil) { providers in
+                            guard let provider = providers.first else { return false }
+                            _ = provider.loadObject(ofClass: URL.self) { url, _ in
+                                guard let url = url, ["png","jpg","jpeg"].contains(url.pathExtension.lowercased()) else { return }
+                                DispatchQueue.main.async { buildStatus = "Build/Buy screenshot selected: \\(url.lastPathComponent). Mode not verified." }
+                            }
+                            return true
+                        }
                     Button("Create starter build plan") {
                         guard !buildDescription.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
                             buildStatus = "Describe the building first."; return
