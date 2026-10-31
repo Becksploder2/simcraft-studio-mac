@@ -97,7 +97,13 @@ struct StudioView: View {
                         Image(nsImage: templateImage).resizable().scaledToFit().frame(width: 220, height: 180)
                     }
                     Button("Detect The Sims 4") { detectGame() }
-                    Button("Capture Sims 4 window") { captureGame() }
+                    Button("Import CAS screenshot") {
+                        let picker = NSOpenPanel()
+                        picker.allowedContentTypes = [.png, .jpeg]
+                        if picker.runModal() == .OK, let url = picker.url {
+                            casStatus = "CAS screenshot selected: \\(url.lastPathComponent). Mode not verified."
+                        }
+                    }
                     Text(casStatus).foregroundStyle(.secondary)
                     Text("CAS workspace background (local preview)")
                     Button("Choose CAS workspace background") {
@@ -157,7 +163,13 @@ struct StudioView: View {
                         buildStatus = casStatus + " Build Mode is not verified."
                     }
                     Text(buildStatus)
-                    Button("Capture Build/Buy screen") { captureBuildMode() }
+                    Button("Import Build/Buy screenshot") {
+                        let picker = NSOpenPanel()
+                        picker.allowedContentTypes = [.png, .jpeg]
+                        if picker.runModal() == .OK, let url = picker.url {
+                            buildStatus = "Build/Buy screenshot selected: \\(url.lastPathComponent). Mode not verified."
+                        }
+                    }
                     Button("Create starter build plan") {
                         guard !buildDescription.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
                             buildStatus = "Describe the building first."; return
