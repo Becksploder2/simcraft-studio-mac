@@ -17,6 +17,7 @@ struct StudioView: View {
     @State private var details = ""
     @State private var compatibility = true
     @State private var photoURL: URL?
+    @State private var photoGeneration = 0
     @State private var photoPreview: NSImage?
     @State private var faceStatus = "Face recognition: no photo analyzed"
     @State private var analyzingFace = false
@@ -236,27 +237,55 @@ struct StudioView: View {
         guard let url=URL(string:"https://api.github.com/repos/Becksploder2/simcraft-studio-mac/releases/latest") else { return }
         do {
             var request=URLRequest(url:url)
-            request.setValue("SimcraftStudio/1.0.11", forHTTPHeaderField:"User-Agent")
+            request.setValue("SimcraftStudio/" + (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0"), forHTTPHeaderField:"User-Agent")
             let (data,_) = try await URLSession.shared.data(for:request)
             guard let json=try JSONSerialization.jsonObject(with:data) as? [String:Any],
                   let tag=json["tag_name"] as? String else { updateStatus="Invalid release information"; return }
             let latest=tag.trimmingCharacters(in:CharacterSet(charactersIn:"vV"))
-            if latest.compare("1.0.11",options:.numeric) != .orderedDescending {
-                updateStatus="Up to date (v1.0.11)."; return
+            let installed = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0"
+            if latest.compare(installed,options:.numeric) != .orderedDescending {
+                updateStatus="Up to date (v" + installed + ")."; return
             }
             updateStatus="Update available: \(tag)"
             let alert=NSAlert()
             alert.messageText="Simcraft Studio \(tag) is available"
-            alert.informativeText="Open the official Mac release page?"
-            alert.addButton(withTitle:"Open release")
+            alert.informativeText="Download the official Mac update to Downloads? Installation is manual."
+            alert.addButton(withTitle:"Download update")
             alert.addButton(withTitle:"Later")
-            if alert.runModal() == .alertFirstButtonReturn,
-               let release=URL(string:"https://github.com/Becksploder2/simcraft-studio-mac/releases/latest") {
-                NSWorkspace.shared.open(release)
+            if alert.runModal() == .alertFirstButtonReturn {
+                let assets=json["assets"] as? [[String:Any]] ?? []
+                let asset=assets.first { item in
+                    let n=(item["name"] as? String ?? "").lowercased()
+                    return n.hasSuffix(".dmg") || (n.hasSuffix(".zip") && n.contains("mac"))
+                }
+                if let link=asset?["browser_download_url"] as? String, let downloadURL=URL(string:link) {
+                    updateStatus="Downloading update..."
+                    let (temp,response)=try await URLSession.shared.download(from:downloadURL)
+                    guard let http=response as? HTTPURLResponse, http.statusCode==200 else {
+                        updateStatus="Update download failed."; return
+                    }
+                    let downloads=FileManager.default.urls(for:.downloadsDirectory,in:.userDomainMask)[0]
+                    let filename=tag+"-"+(asset?["name"] as? String ?? "Simcraft-update.zip")
+                    let destination=downloads.appendingPathComponent(filename)
+                    if FileManager.default.fileExists(atPath:destination.path) {
+                        try FileManager.default.removeItem(at:destination)
+                    }
+                    try FileManager.default.moveItem(at:temp,to:destination)
+                    updateStatus="Update downloaded: "+filename
+                    NSWorkspace.shared.activateFileViewerSelecting([destination])
+                } else if let release=URL(string:"https://github.com/Becksploder2/simcraft-studio-mac/releases/latest") {
+                    NSWorkspace.shared.open(release)
+                }
             }
         } catch { updateStatus="Update check failed: \(error.localizedDescription)" }
     }
     @MainActor func importPhoto(_ url: URL) {
+        photoGeneration += 1
+        let generation = photoGeneration
+        templateGender = "F"
+        templateNumber = 1
+        casCaptureURL = nil
+        casStatus = "New photo: morph session reset. Previous in-game face changes must be reset manually."
         photoURL = url
         photoPreview = nil
         faceStatus = "Loading photo..."
@@ -274,6 +303,7 @@ struct StudioView: View {
                       ] as CFDictionary) else { return nil }
                 return NSImage(cgImage: cg, size: NSSize(width: cg.width, height: cg.height))
             }.value
+            guard generation == photoGeneration else { return }
             photoPreview = image
             faceStatus = image == nil ? "Photo unavailable or too large." : "Photo loaded. Analyzing..."
             if image != nil { analyzeFace() }
