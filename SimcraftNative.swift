@@ -10,8 +10,8 @@ import ImageIO
     }
 }
 struct StudioView: View {
-    let tabs = ["Character Studio","Hair & Glasses","Clothing SmartAssist","CC Library","Face Texture Studio","Glasses Creator","CAS Mod Studio","AI Mod Studio","UV Face Alignment","Buildcraft","Settings"]
-    @State private var selected = "Character Studio"
+    let tabs = ["Simcraft"]
+    @State private var selected = "Simcraft"
     @State private var modName = ""
     @State private var category = "Gameplay interactions"
     @State private var details = ""
@@ -63,7 +63,7 @@ struct StudioView: View {
                 }
             ScrollView(.vertical) {
             VStack(alignment: .leading, spacing: 8) {
-                Text(selected == "Character Studio" ? "Character Studio — reference photo and templates" : selected).font(.headline).bold()
+                Text(selected == "Simcraft" ? "Simcraft — Sim Creator" : selected).font(.headline).bold()
                 if selected == "AI Mod Studio" {
                     TextField("Mod name", text: $modName)
                     Picker("Mod category", selection: $category) {
