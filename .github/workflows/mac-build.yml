@@ -1,0 +1,56 @@
+name: Build Simcraft Studio macOS
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'SimcraftNative.swift'
+      - 'Build_on_Mac.command'
+      - 'Info.plist'
+      - 'Resources/**'
+      - 'AppIcon.iconset/**'
+      - '.github/workflows/mac-build.yml'
+
+jobs:
+  build:
+    runs-on: macos-15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build native Simcraft app
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x Build_on_Mac.command
+          ./Build_on_Mac.command
+          test -x "Simscraft Studio.app/Contents/MacOS/SimscraftStudio"
+          test -f "Simscraft Studio.app/Contents/Resources/SmartMorph.html"
+          test -f "Simscraft Studio.app/Contents/Resources/Templates/Female/F19.png"
+          test -f "Simscraft Studio.app/Contents/Resources/Templates/Male/M19.png"
+      - name: Package portable app
+        shell: bash
+        run: |
+          ditto -c -k --keepParent "Simscraft Studio.app" "Simcraft-Studio-macOS.zip"
+      - name: Package DMG
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dmg-staging
+          ditto "Simscraft Studio.app" "dmg-staging/Simscraft Studio.app"
+          ln -s /Applications dmg-staging/Applications
+          hdiutil create -volname "Simcraft Studio" -srcfolder dmg-staging -format UDZO -ov "Simcraft-Studio-macOS.dmg"
+          hdiutil verify "Simcraft-Studio-macOS.dmg"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Simcraft-Studio-macOS-App
+          path: Simcraft-Studio-macOS.zip
+          retention-days: 30
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Simcraft-Studio-macOS-DMG
+          path: Simcraft-Studio-macOS.dmg
+          retention-days: 30
+          if-no-files-found: error
