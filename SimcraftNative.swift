@@ -21,6 +21,7 @@ struct StudioView: View {
     @State private var photoPreview: NSImage?
     @State private var faceStatus = "Face recognition: no photo analyzed"
     @State private var analyzingFace = false
+    @State private var smartAdapt = true
     @State private var templateGender = "F"
     @State private var templateNumber = 1
     @State private var glasses = "Yes"
@@ -75,7 +76,7 @@ struct StudioView: View {
                     Toggle("Include compatibility checks", isOn: $compatibility)
                     Button("Export mod project JSON") { exportProject() }.disabled(details.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     Text(message).foregroundStyle(.secondary)
-                } else if selected == "Character Studio" {
+                } else if selected == "Simcraft" {
                     Button("Import reference photo") {
                         let picker = NSOpenPanel()
                         picker.allowedContentTypes = [.png, .jpeg, .bmp]
@@ -91,7 +92,8 @@ struct StudioView: View {
                     Picker("Template group", selection: $templateGender) {
                         Text("Female").tag("F"); Text("Male").tag("M")
                     }
-                    Picker("Template selection (manual; auto-detection not ported)", selection: $templateNumber) {
+                    Toggle("SmartAdapt: automatically match facial template", isOn: $smartAdapt)
+                    Picker("Template selection", selection: $templateNumber) {
                         ForEach(1...19, id: \.self) { n in Text("\(templateGender)\(n)").tag(n) }
                     }
                     if let url = Bundle.main.url(forResource: "\(templateGender)\(templateNumber)", withExtension: "png", subdirectory: "Templates/\(templateGender == "F" ? "Female" : "Male")"), let templateImage = NSImage(contentsOf: url) {
@@ -282,7 +284,7 @@ struct StudioView: View {
     @MainActor func importPhoto(_ url: URL) {
         photoGeneration += 1
         let generation = photoGeneration
-        templateGender = "F"
+        analyzingFace = false
         templateNumber = 1
         casCaptureURL = nil
         casStatus = "New photo: morph session reset. Previous in-game face changes must be reset manually."
@@ -311,27 +313,53 @@ struct StudioView: View {
     }
     @MainActor func analyzeFace() {
         guard let url = photoURL, !analyzingFace else { return }
+        let generation = photoGeneration
+        let group = templateGender
+        let automatic = smartAdapt
+        let templates: [(Int, URL)] = (1...19).compactMap { n in
+            guard let file = Bundle.main.url(forResource: group + String(n), withExtension: "png", subdirectory: "Templates/" + (group == "F" ? "Female" : "Male")) else { return nil }
+            return (n, file)
+        }
         analyzingFace = true
         faceStatus = "Analyzing face..."
         Task {
-            let result: String = await Task.detached(priority: .userInitiated) {
-                do {
+            let result: (String, Int?) = await Task.detached(priority: .userInitiated) {
+                func signature(_ file: URL) throws -> [Double]? {
                     let request = VNDetectFaceLandmarksRequest()
-                    let handler = VNImageRequestHandler(url: url, options: [:])
-                    try handler.perform([request])
-                    guard let faces = request.results, !faces.isEmpty else {
-                        return "No face detected. Use a clear frontal photo."
+                    try VNImageRequestHandler(url: file, options: [:]).perform([request])
+                    guard let faces = request.results, faces.count == 1, let lm = faces[0].landmarks else { return nil }
+                    let regions = [lm.leftEye, lm.rightEye, lm.nose, lm.outerLips, lm.faceContour]
+                    var values: [Double] = []
+                    for region in regions {
+                        guard let points = region?.normalizedPoints, !points.isEmpty else { return nil }
+                        let xs = points.map { Double($0.x) }
+                        let ys = points.map { Double($0.y) }
+                        values += [xs.reduce(0,+)/Double(xs.count), ys.reduce(0,+)/Double(ys.count),
+                                   (xs.max() ?? 0)-(xs.min() ?? 0), (ys.max() ?? 0)-(ys.min() ?? 0)]
                     }
-                    let face = faces[0]
-                    let landmarks = face.landmarks
-                    let regions = [landmarks?.leftEye, landmarks?.rightEye, landmarks?.nose,
-                                   landmarks?.outerLips, landmarks?.faceContour].compactMap { $0 }
-                    let pointCount = regions.reduce(0) { $0 + $1.pointCount }
-                    return "Face recognized: \\(faces.count) face(s), \\(pointCount) landmark points in key regions. Template matching is not yet implemented."
-                } catch { return "Face analysis failed: \\(error.localizedDescription)" }
+                    return values
+                }
+                do {
+                    guard let reference = try signature(url) else { return ("Use a clear photo containing one recognizable face.", nil) }
+                    guard automatic else { return ("Face landmarks recognized. Manual template selection enabled.", nil) }
+                    var best: (Int, Double)?
+                    for (n, file) in templates {
+                        guard let candidate = try? signature(file), candidate.count == reference.count else { continue }
+                        let score = zip(reference, candidate).reduce(0.0) { total, pair in
+                            let d = pair.0 - pair.1
+                            return total + d*d
+                        }
+                        if best == nil || score < best!.1 { best = (n, score) }
+                    }
+                    guard let match = best else { return ("No template could be analyzed. Select manually.", nil) }
+                    return ("SmartAdapt suggested " + group + String(match.0) + ". Verify the estimated match in CAS.", match.0)
+                } catch { return ("Face analysis failed: " + error.localizedDescription, nil) }
             }.value
-            faceStatus = result
+            guard generation == photoGeneration else { return }
             analyzingFace = false
+            guard group == templateGender else { faceStatus = "Template group changed. Analyze again."; return }
+            faceStatus = result.0
+            if smartAdapt, let match = result.1 { templateNumber = match }
         }
     }
     @MainActor func inspectPackage(_ url: URL) {
